@@ -1,0 +1,76 @@
+# =========================
+# Python backend
+# =========================
+
+# Bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.env/
+.venv/
+env/
+
+# Logs
+*.log
+
+# SQLite database
+*.sqlite3
+db.sqlite3
+
+# Python packaging
+build/
+dist/
+*.egg-info/
+
+# =========================
+# Frontend (Node.js)
+# =========================
+
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+
+# =========================
+# IDE / Editor files
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+# Misc
+# =========================
+
+coverage/
+*.coverage
