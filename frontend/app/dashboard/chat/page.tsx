@@ -3,13 +3,19 @@
 import { useState, useRef, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Send, Bot, User, Loader2, Sparkles, MessageSquare } from "lucide-react";
+import { 
+  Send, 
+  Bot, 
+  User, 
+  Loader2, 
+  Sparkles 
+} from "lucide-react";
 import axios from "axios";
 
 export default function ChatPage() {
   const { data: session } = useSession();
   const [messages, setMessages] = useState<any[]>([
-    { role: "bot", content: "Hello! I'm your AI learning assistant. How can I help you today?" }
+    { role: "bot", content: "Hello! I'm your AI learning assistant. I can help you understand complex topics, summarize chapters, or plan your study schedule. What's on your mind?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -34,90 +40,96 @@ export default function ChatPage() {
       const res = await axios.post("http://localhost:8001/api/chat", { query: input });
       setMessages((prev) => [...prev, { role: "bot", content: res.data.response }]);
     } catch (err) {
-      setMessages((prev) => [...prev, { role: "bot", content: "Sorry, I encountered an error. Please try again." }]);
+      setMessages((prev) => [...prev, { role: "bot", content: "Apologies, I encountered a connection issue. Please ensure the backend server is active." }]);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-120px)] flex flex-col">
-      <div className="flex items-center gap-3 mb-6 p-4 border-b border-white/5 bg-white/5 rounded-2xl backdrop-blur-md">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-          <Bot className="w-7 h-7 text-white" />
+    <div className="max-w-5xl mx-auto h-[calc(100vh-160px)] flex flex-col pt-8">
+      {/* Header Pill */}
+      <div className="flex items-center gap-4 mb-8 p-6 bento-tile bg-white border-primary/10">
+        <div className="w-14 h-14 rounded-2xl bg-primary/5 flex items-center justify-center border border-primary/20">
+          <Bot className="w-8 h-8 text-primary" />
         </div>
         <div>
-          <h1 className="text-xl font-bold font-heading">AI Tutor</h1>
-          <p className="text-sm text-slate-400">Context-aware learning assistant</p>
+          <h1 className="text-2xl font-extrabold tracking-tight">AI Knowledge Pulse</h1>
+          <p className="text-sm text-text-muted font-bold italic">Context-Aware Neural Tutor</p>
         </div>
-        <div className="ml-auto">
-          <span className="flex items-center gap-2 px-3 py-1 bg-indigo-500/10 border border-indigo-500/20 rounded-lg text-indigo-400 text-xs font-semibold">
-            <Sparkles className="w-3 h-3" />
-            Gemini 1.5 Powered
-          </span>
+        <div className="ml-auto hidden md:block">
+          <div className="flex items-center gap-2 px-4 py-2 bg-surface border border-border rounded-full shadow-sm shadow-primary/5 ring-1 ring-primary/5">
+            <Sparkles className="w-3.5 h-3.5 text-primary animate-pulse" />
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gemini 1.5 Integration</span>
+          </div>
         </div>
       </div>
 
-      {/* Chat Messages Area */}
+      {/* Message Stream */}
       <div 
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-6 pr-4 custom-scrollbar"
+        className="flex-1 overflow-y-auto space-y-8 pr-6 custom-scrollbar scroll-smooth"
       >
         <AnimatePresence>
           {messages.map((msg, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex items-start gap-4 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className={`flex items-start gap-5 ${msg.role === "user" ? "flex-row-reverse" : ""}`}
             >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                msg.role === "bot" ? "bg-indigo-600/20 border border-indigo-600/30" : "bg-purple-600/20 border border-purple-600/30"
-              }`}>
-                {msg.role === "bot" ? <Bot className="w-5 h-5 text-indigo-400" /> : <User className="w-5 h-5 text-purple-400" />}
-              </div>
-              <div className={`max-w-[80%] p-5 rounded-2xl shadow-sm leading-relaxed ${
+              <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${
                 msg.role === "bot" 
-                  ? "bg-white/5 border border-white/10 text-slate-200 rounded-tl-none" 
-                  : "bg-indigo-600/20 border border-indigo-600/20 text-white rounded-tr-none"
+                  ? "bg-white border-primary/20 text-primary" 
+                  : "bg-primary border-primary text-white"
+              }`}>
+                {msg.role === "bot" ? <Bot className="w-6 h-6" /> : <User className="w-6 h-6" />}
+              </div>
+              <div className={`max-w-[75%] p-6 rounded-3xl text-sm font-medium leading-relaxed bento-tile bg-white ${
+                msg.role === "bot" 
+                  ? "border-l-4 border-l-primary rounded-tl-none text-text-main" 
+                  : "border-r-4 border-r-primary rounded-tr-none text-text-main bg-surface/30"
               }`}>
                 {msg.content}
               </div>
             </motion.div>
           ))}
+          
           {loading && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-600/30 flex items-center justify-center shrink-0">
-                <Loader2 className="w-5 h-5 text-indigo-400 animate-spin" />
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start gap-5">
+              <div className="w-12 h-12 rounded-2xl bg-white border border-primary/20 flex items-center justify-center shrink-0 shadow-sm">
+                <Loader2 className="w-6 h-6 text-primary animate-spin" />
               </div>
-              <div className="bg-white/5 border border-white/10 p-5 rounded-2xl rounded-tl-none italic text-slate-500 text-sm">
-                Thinking...
+              <div className="p-6 rounded-3xl rounded-tl-none italic text-text-muted text-xs font-bold tracking-tight bg-white border border-border">
+                Synthesizing response...
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Input Area */}
-      <div className="mt-8">
-        <form onSubmit={sendMessage} className="relative group">
+      {/* Input Pill */}
+      <div className="mt-8 relative group">
+        <form onSubmit={sendMessage} className="relative">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about your course, concepts, or study tips..."
-            className="w-full bg-white/5 border border-white/10 rounded-2xl py-5 pl-8 pr-20 focus:border-indigo-500 outline-none transition-all placeholder:text-slate-600 group-focus-within:bg-white/[0.08]"
+            placeholder="Type your inquiry here..."
+            className="w-full bg-white border-2 border-border rounded-2xl py-6 pl-10 pr-24 focus:border-primary outline-none transition-all placeholder:text-text-muted/40 font-bold text-lg shadow-2xl shadow-primary/5"
           />
-          <button
-            disabled={!input.trim() || loading}
-            type="submit"
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white hover:scale-105 transition-transform disabled:opacity-50 disabled:scale-100"
-          >
-            <Send className="w-5 h-5" />
-          </button>
+          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <button
+              disabled={!input.trim() || loading}
+              type="submit"
+              className="primary-btn flex items-center justify-center w-14 h-14 rounded-xl shadow-lg shadow-primary/20 disabled:scale-90 disabled:opacity-50"
+            >
+              <Send className="w-6 h-6" />
+            </button>
+          </div>
         </form>
-        <p className="text-center text-[10px] text-slate-600 mt-4 uppercase tracking-widest font-bold">
-          AI can make mistakes. Verify important information.
+        <p className="text-center text-[9px] font-black text-text-muted mt-5 uppercase tracking-[0.2em] opacity-40">
+          Precision Education &bull; AI Verification Recommended
         </p>
       </div>
     </div>

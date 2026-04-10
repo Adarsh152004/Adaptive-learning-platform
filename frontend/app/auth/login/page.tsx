@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Mail, Lock, Loader2, ArrowRight } from "lucide-react";
+import { Mail, Lock, Loader2, ArrowRight, Sparkles } from "lucide-react";
 
 export default function LoginPage() {
   const [formData, setFormData] = useState({ email: "", password: "" });
@@ -33,55 +33,55 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#0f172a] px-6">
-      {/* Background Decor */}
-      <div className="absolute top-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-
+    <div className="min-h-screen flex items-center justify-center bg-surface px-6 font-sans">
       <motion.div 
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-card w-full max-w-md p-10 relative z-10"
+        className="bento-tile w-full max-w-md p-10 bg-white"
       >
         <div className="text-center mb-10">
-          <h1 className="text-4xl font-bold font-heading mb-3">Welcome <span className="text-gradient">Back</span></h1>
-          <p className="text-slate-400">Continue your personalized learning path.</p>
+          <div className="inline-flex items-center gap-2 text-primary font-bold text-sm mb-4">
+            <Sparkles className="w-4 h-4" />
+            LearnSphere AI
+          </div>
+          <h1 className="text-3xl font-extrabold tracking-tight mb-2">Welcome Back</h1>
+          <p className="text-text-muted text-sm font-medium">Continue your knowledge pulse.</p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+          <div className="mb-6 p-4 rounded-sm bg-error/5 border border-error text-error text-xs font-bold">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-300 ml-1">Email Address</label>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted ml-1">Email Address</label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 required
                 type="email"
                 placeholder="name@example.com"
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                className="w-full bg-surface border border-border rounded-sm py-3 pl-11 pr-4 focus:border-primary focus:ring-0 transition-all outline-none text-sm font-medium"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex justify-between items-center ml-1">
-              <label className="text-sm font-medium text-slate-300">Password</label>
-              <Link href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</Link>
+              <label className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Password</label>
+              <Link href="#" className="text-[10px] font-bold text-primary hover:underline">Forgot?</Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted" />
               <input
                 required
                 type="password"
                 placeholder="••••••••"
-                className="w-full bg-white/5 border border-white/10 rounded-xl py-3 pl-12 pr-4 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all outline-none"
+                className="w-full bg-surface border border-border rounded-sm py-3 pl-11 pr-4 focus:border-primary focus:ring-0 transition-all outline-none text-sm font-medium"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               />
@@ -91,20 +91,20 @@ export default function LoginPage() {
           <button
             disabled={loading}
             type="submit"
-            className="vibrant-btn w-full flex items-center justify-center gap-2 mt-4"
+            className="primary-btn w-full flex items-center justify-center gap-2 mt-4 shadow-lg shadow-primary/10"
           >
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
               <>
-                Sign In <ArrowRight className="w-5 h-5" />
+                Sign In <ArrowRight className="w-4 h-4" />
               </>
             )}
           </button>
         </form>
 
-        <p className="text-center mt-8 text-slate-400">
-          Don&apos;t have an account?{" "}
-          <Link href="/auth/signup" className="text-indigo-400 hover:text-indigo-300 font-medium">
-            Join LearnSphere
+        <p className="text-center mt-8 text-text-muted text-xs font-medium">
+          New to the platform?{" "}
+          <Link href="/auth/signup" className="text-primary hover:underline font-bold">
+            Join Now
           </Link>
         </p>
       </motion.div>

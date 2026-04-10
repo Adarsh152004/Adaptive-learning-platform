@@ -8,11 +8,13 @@ import {
   GraduationCap, 
   User, 
   LogOut,
-  BrainCircuit
+  BrainCircuit,
+  Sparkles
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { motion } from "framer-motion";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -29,21 +31,44 @@ export default function DashboardLayout({
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "AI Tutor", href: "/dashboard/chat", icon: MessageSquare },
     { name: "Courses", href: "/dashboard/courses", icon: GraduationCap },
-    { name: "Risk Analysis", href: "/dashboard/risk", icon: BrainCircuit },
-    { name: "Profile", href: "/dashboard/profile", icon: User },
+    { name: "Predict", href: "/dashboard/risk", icon: BrainCircuit },
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#0f172a]">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-white/5 bg-[#0f172a]/50 backdrop-blur-xl sticky top-0 h-screen hidden md:flex flex-col">
-        <div className="p-8">
-          <Link href="/" className="text-2xl font-bold font-heading text-gradient">
-            LearnSphere
-          </Link>
+    <div className="min-h-screen bg-surface selection:bg-primary/10">
+      {/* Unique Floating Profile Hub (Top Right) */}
+      <div className="fixed top-8 right-8 z-50">
+        <div className="floating-pill flex items-center gap-3 pr-2">
+          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+            <User className="w-4 h-4 text-primary" />
+          </div>
+          <button
+            onClick={() => signOut({ callbackUrl: "/" })}
+            className="p-2 hover:bg-error/10 hover:text-error rounded-full transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
+      </div>
 
-        <nav className="flex-1 px-4 space-y-2">
+      {/* Main Content Area */}
+      <main className="pb-32">
+        {children}
+      </main>
+
+      {/* Unique Bottom Nav Pill */}
+      <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50">
+        <motion.nav 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="floating-pill flex items-center gap-1 p-1.5"
+        >
+          <div className="px-4 py-1.5 mr-2 border-r border-border hidden sm:flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold italic tracking-tighter">LearnSphere</span>
+          </div>
+          
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = pathname === item.href;
@@ -52,40 +77,19 @@ export default function DashboardLayout({
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group",
+                  "flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300",
                   isActive 
-                    ? "bg-indigo-600/10 text-indigo-400 border border-indigo-600/20" 
-                    : "text-slate-400 hover:text-slate-200 hover:bg-white/5"
+                    ? "bg-primary text-white shadow-lg shadow-primary/20" 
+                    : "text-text-muted hover:text-text-main hover:bg-surface"
                 )}
               >
-                <Icon className={cn("w-5 h-5", isActive ? "text-indigo-400" : "text-slate-500 group-hover:text-slate-300")} />
-                <span className="font-medium">{item.name}</span>
+                <Icon className="w-4 h-4" />
+                <span className={cn("text-xs font-bold whitespace-nowrap", !isActive && "hidden md:inline")}>{item.name}</span>
               </Link>
             );
           })}
-        </nav>
-
-        <div className="p-4 border-t border-white/5">
-          <button
-            onClick={() => signOut({ callbackUrl: "/" })}
-            className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-400 hover:text-red-400 hover:bg-red-400/5 transition-all w-full"
-          >
-            <LogOut className="w-5 h-5" />
-            <span className="font-medium">Logout</span>
-          </button>
-        </div>
-      </aside>
-
-      {/* Main Content */}
-      <main className="flex-1 overflow-y-auto">
-        <header className="h-20 border-bottom border-white/5 flex items-center justify-between px-8 md:hidden">
-            <span className="text-xl font-bold font-heading text-gradient">LearnSphere</span>
-            {/* Mobile menu toggle would go here */}
-        </header>
-        <div className="p-4 md:p-8">
-          {children}
-        </div>
-      </main>
+        </motion.nav>
+      </div>
     </div>
   );
 }

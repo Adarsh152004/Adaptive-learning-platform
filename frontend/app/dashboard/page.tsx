@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { 
@@ -11,7 +11,11 @@ import {
   BrainCircuit,
   AlertTriangle,
   CheckCircle2,
-  Loader2
+  Loader2,
+  Calendar,
+  Zap,
+  LayoutGrid,
+  ArrowUpRight
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -46,7 +50,6 @@ export default function DashboardPage() {
   const analyzeRisk = async () => {
     setLoadingRisk(true);
     try {
-      // Sample metrics: [study_hours, attendance_rate, previous_score, engagement_score]
       const res = await axios.post("http://localhost:8001/api/predict-risk", {
         metrics: [7.5, 0.9, 85, 92]
       });
@@ -65,8 +68,8 @@ export default function DashboardPage() {
         label: "Performance Score",
         data: [65, 78, 72, 85, 82, 90],
         fill: true,
-        borderColor: "#6366f1",
-        backgroundColor: "rgba(99, 102, 241, 0.1)",
+        borderColor: "#5624d0",
+        backgroundColor: "rgba(86, 36, 208, 0.05)",
         tension: 0.4,
       },
     ],
@@ -74,119 +77,126 @@ export default function DashboardPage() {
 
   const chartOptions = {
     responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
     },
     scales: {
-      y: { grid: { color: "rgba(255,255,255,0.05)" }, ticks: { color: "#94a3b8" } },
-      x: { grid: { display: false }, ticks: { color: "#94a3b8" } },
+      y: { border: { display: false }, grid: { color: "#f1f1f1" }, ticks: { color: "#6a6f73" } },
+      x: { border: { display: false }, grid: { display: false }, ticks: { color: "#6a6f73" } },
     },
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      {/* Welcome Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <main className="min-h-screen bg-surface p-6 md:p-12 font-sans">
+      {/* Dynamic Header */}
+      <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
-          <h1 className="text-3xl font-bold font-heading">
-            Welcome back, <span className="text-gradient">{session?.user?.name || "Student"}</span>!
+          <div className="flex items-center gap-2 text-primary font-bold mb-2">
+            <LayoutGrid className="w-5 h-5" />
+            Learning Console
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight">
+            Hi, <span className="text-primary italic">{session?.user?.name || "Scholar"}</span>
           </h1>
-          <p className="text-slate-400 mt-1">Here&apos;s your learning progress for this month.</p>
+          <p className="text-text-muted mt-2 italic font-medium">Your daily knowledge pulse is ready.</p>
         </div>
+        
         <button 
           onClick={analyzeRisk}
           disabled={loadingRisk}
-          className="flex items-center gap-2 px-6 py-3 bg-white/5 border border-white/10 rounded-xl hover:bg-indigo-600/10 hover:border-indigo-600/20 transition-all font-medium"
+          className="primary-btn flex items-center gap-3 shadow-lg shadow-primary/20"
         >
-          {loadingRisk ? <Loader2 className="w-5 h-5 animate-spin" /> : <BrainCircuit className="w-5 h-5 text-indigo-400" />}
-          AI Risk Analysis
+          {loadingRisk ? <Loader2 className="w-5 h-5 animate-spin" /> : <BrainCircuit className="w-5 h-5" />}
+          Run AI Insight
         </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard icon={<Clock className="text-indigo-400" />} label="Study Hours" value="42.5h" trend="+12%" />
-        <StatCard icon={<TrendingUp className="text-emerald-400" />} label="Avg. Score" value="88%" trend="+5%" />
-        <StatCard icon={<Users className="text-purple-400" />} label="Attendance" value="94%" trend="-2%" />
-        <StatCard icon={<Award className="text-pink-400" />} label="Courses Done" value="12" trend="+3" />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Performance Chart */}
-        <div className="lg:col-span-2 glass-card p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-bold font-heading">Performance Overview</h3>
-            <select className="bg-white/5 border border-white/10 rounded-lg px-3 py-1 text-sm outline-none">
-              <option>Last 6 Weeks</option>
-              <option>Last 3 Months</option>
-            </select>
+      {/* Bento Dashboard Grid */}
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-6 md:grid-rows-4 gap-4 h-auto md:h-[900px]">
+        
+        {/* Risk Analysis Status (Large Tile) */}
+        <div className="md:col-span-3 md:row-span-2 bento-tile p-8 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center border border-border">
+              <Zap className="w-6 h-6 text-amber-500" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted bg-surface px-2 py-1 rounded border border-border">AI System Active</span>
           </div>
-          <div className="h-[300px]">
-            <Line data={chartData} options={chartOptions} />
-          </div>
-        </div>
-
-        {/* AI Insight Sidebar */}
-        <div className="glass-card p-8 flex flex-col justify-between">
+          
           <div>
-            <h3 className="text-xl font-bold font-heading mb-6">AI Learning Insight</h3>
+            <h3 className="text-2xl font-bold mb-4">Risk Status</h3>
             {riskData ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-                <div className={cn(
-                  "p-4 rounded-2xl flex items-center gap-4",
-                  riskData.risk_level === "High" ? "bg-red-500/10 border border-red-500/20" : "bg-emerald-500/10 border border-emerald-500/20"
-                )}>
-                  {riskData.risk_level === "High" ? <AlertTriangle className="w-8 h-8 text-red-400" /> : <CheckCircle2 className="w-8 h-8 text-emerald-400" />}
-                  <div>
-                    <p className="text-sm text-slate-400">Current Risk Status</p>
-                    <p className={cn("text-lg font-bold", riskData.risk_level === "High" ? "text-red-400" : "text-emerald-400")}>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className={`p-6 rounded-sm border-l-4 ${riskData.risk_level === "High" ? "border-error bg-error/5" : "border-success bg-success/5"}`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    {riskData.risk_level === "High" ? <AlertTriangle className="w-6 h-6 text-error" /> : <CheckCircle2 className="w-6 h-6 text-success" />}
+                    <p className={`text-xl font-bold ${riskData.risk_level === "High" ? "text-error" : "text-success"}`}>
                       {riskData.status} ({Math.round(riskData.risk_probability * 100)}%)
                     </p>
                   </div>
+                  <p className="text-sm text-text-muted leading-relaxed">
+                    Personalized AI prediction suggests you are currently {riskData.risk_level === "High" ? "at risk of performance drops." : "maintaining an excellent learning pace."}
+                  </p>
                 </div>
-                <p className="text-slate-400 leading-relaxed text-sm">
-                  Based on your recent engagement and study patterns, the AI suggests you are {riskData.risk_level === "High" ? "at risk of falling behind." : "well on track for your goals."} 
-                </p>
               </motion.div>
             ) : (
-              <div className="text-center py-10">
-                <BrainCircuit className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-                <p className="text-slate-500 text-sm">Click &quot;AI Risk Analysis&quot; to generate your personalized learning report.</p>
+              <div className="py-12 text-center border-2 border-dashed border-border rounded-sm">
+                <BrainCircuit className="w-12 h-12 text-border mx-auto mb-4" />
+                <p className="text-sm text-text-muted font-medium">Click above to initialize AI tracking</p>
               </div>
             )}
           </div>
           
-          <button className="vibrant-btn w-full mt-6 py-2 text-sm">
-            View Smart Recommendations
-          </button>
+          <div className="flex justify-between items-center pt-6 border-t border-border">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
+              <Calendar className="w-4 h-4" /> Next Review: Tomorrow
+            </div>
+            <button className="text-primary text-xs font-bold hover:underline">View Details</button>
+          </div>
+        </div>
+
+        {/* Performance Chart (Large Horizontal Tile) */}
+        <div className="md:col-span-3 md:row-span-2 bento-tile p-8">
+          <div className="flex justify-between items-center mb-10">
+            <h3 className="text-xl font-bold">Engagement Velocity</h3>
+            <div className="text-[10px] font-bold text-text-muted uppercase border border-border px-2 py-1">Unit: % Score</div>
+          </div>
+          <div className="h-[280px]">
+            <Line data={chartData} options={chartOptions} />
+          </div>
+        </div>
+
+        {/* Quick Stats Grid (4 Small Tiles) */}
+        <StatTile icon={<Clock className="text-blue-500" />} label="Hours Focus" value="42.5h" />
+        <StatTile icon={<TrendingUp className="text-emerald-500" />} label="Avg. Velocity" value="88%" />
+        <StatTile icon={<Users className="text-purple-500" />} label="Peer Rank" value="#12" />
+        <StatTile icon={<Award className="text-amber-500" />} label="Milestones" value="09" />
+
+        {/* Bottom CTA Tile */}
+        <div className="md:col-span-2 md:row-span-1 bento-tile bg-primary p-6 group cursor-pointer overflow-hidden">
+          <div className="relative z-10">
+            <h4 className="text-white font-bold text-lg mb-2">Smart Course Library</h4>
+            <p className="text-white/70 text-xs">Explore 24 new chapters tailored for you.</p>
+          </div>
+          <ArrowUpRight className="absolute bottom-4 right-4 text-white w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
+          <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 
-function StatCard({ icon, label, value, trend }: any) {
+function StatTile({ icon, label, value }: any) {
   return (
-    <div className="glass-card p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">
-          {icon}
-        </div>
-        <span className={cn(
-          "text-xs font-bold px-2 py-1 rounded-lg",
-          trend.startsWith("+") ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
-        )}>
-          {trend}
-        </span>
+    <div className="md:col-span-1 md:row-span-1 bento-tile p-6 flex flex-col justify-between">
+      <div className="p-2 w-fit rounded bg-surface border border-border">
+        {icon}
       </div>
       <div>
-        <p className="text-sm text-slate-400">{label}</p>
-        <p className="text-2xl font-bold font-heading mt-1">{value}</p>
+        <p className="text-[10px] uppercase font-bold tracking-widest text-text-muted mb-1">{label}</p>
+        <p className="text-2xl font-bold tracking-tighter">{value}</p>
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any) {
-  return inputs.filter(Boolean).join(" ");
 }

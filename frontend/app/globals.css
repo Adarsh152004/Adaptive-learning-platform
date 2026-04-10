@@ -2,18 +2,17 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --color-primary: #6366f1;
-  --color-primary-hover: #4f46e5;
-  --color-secondary: #ec4899;
-  --color-accent: #8b5cf6;
-  --color-background: #0f172a;
-  --color-card-bg: rgba(30, 41, 59, 0.7);
-  --color-border: rgba(255, 255, 255, 0.1);
-  --color-text-main: #f8fafc;
-  --color-text-muted: #94a3b8;
-  --color-glass: rgba(255, 255, 255, 0.03);
-  --color-glass-border: rgba(255, 255, 255, 0.05);
-  --vibrant-gradient: linear-gradient(135deg, #6366f1 0%, #a855f7 50%, #ec4899 100%);
+  --color-primary: #5624d0;
+  --color-primary-hover: #401b9c;
+  --color-secondary: #2d2f31;
+  --color-accent: #a435f0;
+  --color-background: #ffffff;
+  --color-surface: #f7f9fa;
+  --color-border: #d1d7dc;
+  --color-text-main: #1c1d1f;
+  --color-text-muted: #6a6f73;
+  --color-success: #1e8e3e;
+  --color-error: #b32d1f;
 }
 
 @layer base {
@@ -27,38 +26,61 @@
 }
 
 @layer components {
-  .glass-card {
-    background-color: var(--color-card-bg);
-    backdrop-filter: blur(24px);
+  .bento-tile {
+    background-color: white;
     border: 1px solid var(--color-border);
-    border-radius: 1.5rem;
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 400ms cubic-bezier(0.23, 1, 0.32, 1);
+    position: relative;
+    overflow: hidden;
   }
-  .glass-card:hover {
-    border-color: rgba(255, 255, 255, 0.2);
-    transform: translateY(-4px);
-    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  .bento-tile:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    border-color: var(--color-primary);
+    transform: translateY(-2px);
   }
 
-  .vibrant-btn {
-    background: var(--vibrant-gradient);
+  .primary-btn {
+    background-color: var(--color-primary);
     color: white;
-    font-weight: 600;
+    font-weight: 700;
     padding: 0.75rem 1.5rem;
-    border-radius: 0.75rem;
-    transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+    transition: background-color 200ms ease;
   }
-  .vibrant-btn:hover {
-    transform: scale(1.02);
-    box-shadow: 0 6px 20px rgba(99, 102, 241, 0.45);
+  .primary-btn:hover {
+    background-color: var(--color-primary-hover);
+  }
+
+  .secondary-btn {
+    background-color: transparent;
+    border: 1px solid var(--color-text-main);
+    color: var(--color-text-main);
+    font-weight: 700;
+    padding: 0.75rem 1.5rem;
+    transition: all 200ms ease;
+  }
+  .secondary-btn:hover {
+    background-color: rgba(0,0,0,0.04);
   }
 
   .text-gradient {
-    background: var(--vibrant-gradient);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    color: var(--color-primary);
   }
+
+  .floating-pill {
+    background: white;
+    border: 1px solid var(--color-border);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    border-radius: 9999px;
+    padding: 0.5rem 1.25rem;
+  }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
 }
 
