@@ -46,7 +46,7 @@ export default function VideoLibraryPage() {
     setUploading(true);
     setUploadSuccess(false);
     try {
-      await axios.post("http://localhost:8001/api/process-video", {
+      await axios.post("http://localhost:8001/api/recommendations/process-video", {
         video_url: videoUrl,
         tutor_name: "LearnSphere Tutor",
         course_name: "AI Library Knowledge"

@@ -1,6 +1,6 @@
 import os
 from pinecone import Pinecone, ServerlessSpec
-from google.generativeai import embed_content
+import google.generativeai as genai
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,24 +12,32 @@ class PineconeService:
         self.index_name = os.getenv("PINECONE_INDEX_NAME", "learnsphere-index")
         
         if self.api_key:
+            # Configure Gemini for embeddings
+            gemini_key = os.getenv("GEMMA_API_KEY")
+            if gemini_key:
+                genai.configure(api_key=gemini_key)
+            
             self.pc = Pinecone(api_key=self.api_key)
             # Create index if it doesn't exist
             if self.index_name not in self.pc.list_indexes().names():
                 self.pc.create_index(
                     name=self.index_name,
-                    dimension=768, # Gemini embedding dimension
+                    dimension=768, # Standardized to match Gemini 768-d vectors
                     metric="cosine",
                     spec=ServerlessSpec(cloud="aws", region="us-east-1")
                 )
-            self.index = self.pc.Index(self.index_name)
+            
+            # Use host for stability
+            index_desc = self.pc.describe_index(self.index_name)
+            self.index = self.pc.Index(self.index_name, host=index_desc.host)
         else:
             self.index = None
             print("WARNING: PINECONE_API_KEY not found. Vector search will be disabled.")
 
     def get_embedding(self, text):
         """Get embeddings using Gemini (Reliable & Free)."""
-        result = embed_content(
-            model="models/text-embedding-004",
+        result = genai.embed_content(
+            model="models/gemini-embedding-001",
             content=text,
             task_type="retrieval_document",
             title="Embedding for LearnSphere"

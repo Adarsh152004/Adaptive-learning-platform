@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from components.connection import connection
 from ai import recommendation_service
 from ai import quiz_service
+from ai.pinecone_service import pinecone_store
 import datetime
 
 load_dotenv()
@@ -21,7 +22,9 @@ app = FastAPI(title="LearnSphere AI API")
 app.include_router(recommendation_service.router)
 app.include_router(quiz_service.router)
 
-# DB connection (Supabase)
+@app.get("/api/health")
+async def global_health():
+    return {"status": "LearnSphere AI Hub is Online", "version": "2.0.0"}
 db = connection()
 
 # Initialize Gemini
@@ -37,13 +40,25 @@ groq_api_key = os.getenv("GROQ_API_KEY")
 groq_client = Groq(api_key=groq_api_key) if groq_api_key else None
 
 async def call_ai_with_failover(prompt, system_instruction="You are a helpful learning assistant."):
-    """Robust AI caller with Gemini -> Groq -> Local fallback chain."""
+    """Robust AI caller with Pinecone RAG + Gemini -> Groq fallback chain."""
+    
+    # AI Hub RAG: Get application context from Pinecone
+    context = ""
+    try:
+        context_matches = pinecone_store.query_documents(prompt, top_k=2)
+        if context_matches:
+            context = "\n\nRelevant Application Context:\n" + "\n---\n".join(context_matches)
+    except Exception as e:
+        print(f"RAG Context Retrieval Failed: {e}")
+
+    system_with_context = f"{system_instruction}{context}"
+
     # 1. Primary: Gemini
     try:
-        full_prompt = f"{system_instruction}\n\nUser: {prompt}"
+        full_prompt = f"{system_with_context}\n\nUser: {prompt}"
         response = model.generate_content(full_prompt)
         if response and response.text:
-            return response.text, "Gemini (Primary)"
+            return response.text, "Gemini (RAG-Enhanced)"
     except Exception as e:
         print(f"Gemini Fallback Triggered: {e}")
 
@@ -388,13 +403,28 @@ async def generate_course(req: CourseRequest):
             
         return {"chapters": chapters}
     except Exception as e:
-        print(f"Course Generation Critical Error: {e}")
         # Final fallback to ensure the UI doesn't break
-        return {
-            "chapters": [
-                {"title": f"Welcome to {req.topic}", "video_url": "", "video_title": "Course Overview", "image_url": "https://pollinations.ai/p/educational-shield?width=1280&height=720"}
-            ]
-        }
+        print(f"Applying Smart Local Fallback for topic: {req.topic}")
+        # Predefined templates that work for almost any topic
+        templates = [
+            {"title": f"Introductory {req.topic} Concepts", "video_title": f"Getting Started with {req.topic}", "img_key": "physics"},
+            {"title": f"Core Foundations of {req.topic}", "video_title": f"Critical Theory of {req.topic}", "img_key": "shield"},
+            {"title": f"Practical {req.topic} Techniques", "video_title": f"Hands-on {req.topic} Mastery", "img_key": "course"},
+            {"title": f"Advanced {req.topic} Architecture", "video_title": f"Scaling {req.topic} Solutions", "img_key": "robot"},
+            {"title": f"The Future of {req.topic}", "video_title": f"Modern Trends in {req.topic}", "img_key": "neural"}
+        ]
+        
+        fallback_chapters = []
+        for i, t in enumerate(templates[:req.no_of_chapters]):
+            image_url = f"https://pollinations.ai/p/{t['img_key']}?width=1280&height=720&seed={i}"
+            fallback_chapters.append({
+                "title": t["title"],
+                "video_url": "",
+                "video_title": t["video_title"],
+                "image_url": image_url
+            })
+            
+        return {"chapters": fallback_chapters}
 
 if __name__ == "__main__":
     import uvicorn

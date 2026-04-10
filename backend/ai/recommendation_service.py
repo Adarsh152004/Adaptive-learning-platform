@@ -1,6 +1,10 @@
 import os
 import uuid
-import whisper
+try:
+    import whisper
+except ImportError:
+    whisper = None
+
 import yt_dlp
 import google.generativeai as genai
 import imageio_ffmpeg
@@ -12,8 +16,8 @@ from pydantic import BaseModel
 from typing import List, Dict, Any
 from components.connection import connection
 
-# Router setup
-router = APIRouter()
+# Router setup with explicit prefix to prevent 404s
+router = APIRouter(prefix="/api/recommendations", tags=["Recommendations"])
 db = connection() # Supabase connection
 
 # Inject zero-config ffmpeg into system PATH
@@ -33,6 +37,8 @@ _whisper_model = None
 def get_whisper_model():
     global _whisper_model
     if _whisper_model is None:
+        if whisper is None:
+            raise ImportError("Whisper module is not installed. Please wait for dependency installation.")
         print("Loading Whisper model (base)...")
         _whisper_model = whisper.load_model("base")
     return _whisper_model
@@ -49,7 +55,11 @@ def chunk_text(text: str, chunk_size: int = 500) -> List[str]:
     """Splits a long paragraph into rough token chunks. Wait, whisper actually returns 'segments' with timestamps!"""
     pass # we will use segments directly instead
 
-@router.post("/api/process-video")
+@router.get("/health")
+async def health():
+    return {"status": "Recommendations router is active"}
+
+@router.post("/process-video")
 async def process_video(req: ProcessVideoRequest):
     """
     Downloads, transcribes, and embeds a video into Supabase.
@@ -124,7 +134,7 @@ async def process_video(req: ProcessVideoRequest):
                 # Use robust fallback logic if API key lacks embedding models
                 try:
                     emb_res = genai.embed_content(
-                        model="models/embedding-001",
+                        model="models/gemini-embedding-001",
                         content=current_chunk_text.strip(),
                         task_type="retrieval_document"
                     )
@@ -132,13 +142,13 @@ async def process_video(req: ProcessVideoRequest):
                 except Exception:
                     embedding_vector = fallback_embed(current_chunk_text.strip())
 
-                # Insert chunk into Supabase
-                db.table("video_chunks").insert({
+                # Add chunk to batch for bulk insert
+                chunks_prepared.append({
                     "video_id": video_id,
                     "chunk_text": current_chunk_text.strip(),
                     "timestamp": int(current_chunk_start),
                     "embedding": embedding_vector
-                }).execute()
+                })
                 current_chunk_text = ""
                 
         # Bulk Insert Chunks
@@ -163,7 +173,7 @@ async def process_video(req: ProcessVideoRequest):
                 except:
                     pass
 
-@router.post("/api/recommendations/search")
+@router.post("/search")
 async def search_recommendations(req: SearchRequest):
     """
     Takes a search topic, embeds it, and queries Supabase pgvector.
@@ -172,7 +182,7 @@ async def search_recommendations(req: SearchRequest):
         # 1. Embed topic
         try:
             emb_res = genai.embed_content(
-                model="models/embedding-001",
+                model="models/gemini-embedding-001",
                 content=req.topic,
                 task_type="retrieval_query",
             )
@@ -191,17 +201,23 @@ async def search_recommendations(req: SearchRequest):
         # In case we used our mock random seed, let's just directly sort by string match similarity as a backup
         # to ensure the UI ALWAYS finds something good if they type something like "Deep Learning"
         if not recs and req.topic:
+            print(f"Applying Semantic Search Fallback for query: {req.topic}")
             all_chunks = db.table("video_chunks").select("*, videos(title, course, tutor, video_url)").execute()
             query_lower = req.topic.lower()
             recs = []
             for c in all_chunks.data:
-                score = 0.5
-                if query_lower in c.get('chunk_text', '').lower(): score += 0.3
-                if query_lower in c['videos']['course'].lower(): score += 0.2
-                if score > 0.5:
+                score = 0.0
+                # Exact matches in Title/Course get highest priority
+                if query_lower in c['videos']['title'].lower(): score += 0.8
+                if query_lower in c['videos']['course'].lower(): score += 0.6
+                if query_lower in c.get('chunk_text', '').lower(): score += 0.4
+                
+                if score > 0.3:
                     c_data = c
                     c_data['similarity'] = score
                     recs.append(c_data)
+                    
+            # Sort by score descending and limit results
             recs = sorted(recs, key=lambda x: x['similarity'], reverse=True)[:5]
 
         
