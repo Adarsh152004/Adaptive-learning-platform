@@ -10,12 +10,16 @@ import {
   Award, 
   BrainCircuit,
   AlertTriangle,
-  CheckCircle2,
+  CheckCircle2 as CheckCircleIcon,
+  CheckSquare,
+  BookOpen,
+  Atom,
+  FlaskConical,
+  Sigma,
   Loader2,
-  Calendar,
-  Zap,
   LayoutGrid,
-  ArrowUpRight
+  Zap,
+  Calendar
 } from "lucide-react";
 import {
   Chart as ChartJS,
@@ -44,29 +48,14 @@ ChartJS.register(
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const [riskData, setRiskData] = useState<any>(null);
-  const [loadingRisk, setLoadingRisk] = useState(false);
-
-  const analyzeRisk = async () => {
-    setLoadingRisk(true);
-    try {
-      const res = await axios.post("http://localhost:8001/api/predict-risk", {
-        metrics: [7.5, 0.9, 85, 92]
-      });
-      setRiskData(res.data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingRisk(false);
-    }
-  };
+  const [activeRoadmap, setActiveRoadmap] = useState("all");
 
   const chartData = {
-    labels: ["Week 1", "Week 2", "Week 3", "Week 4", "Week 5", "Week 6"],
+    labels: ["Mock 1", "Mock 2", "Mock 3", "Mock 4", "Mock 5", "AITS 1"],
     datasets: [
       {
-        label: "Performance Score",
-        data: [65, 78, 72, 85, 82, 90],
+        label: "Percentile",
+        data: [72, 78, 85, 83, 91, 94],
         fill: true,
         borderColor: "#5624d0",
         backgroundColor: "rgba(86, 36, 208, 0.05)",
@@ -92,75 +81,33 @@ export default function DashboardPage() {
       {/* Dynamic Header */}
       <div className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row justify-between items-end gap-6">
         <div>
-          <div className="flex items-center gap-2 text-primary font-bold mb-2">
+          <div className="flex items-center gap-2 text-primary font-bold mb-2 tracking-widest text-[10px] uppercase">
             <LayoutGrid className="w-5 h-5" />
-            Learning Console
+            JEE & NEET Adaptive Console
           </div>
           <h1 className="text-4xl font-extrabold tracking-tight">
-            Hi, <span className="text-primary italic">{session?.user?.name || "Scholar"}</span>
+            Hi, <span className="text-primary italic">{session?.user?.name || "Aspirant"}</span>
           </h1>
-          <p className="text-text-muted mt-2 italic font-medium">Your daily knowledge pulse is ready.</p>
+          <p className="text-text-muted mt-2 italic font-medium">Your personalized IIT-JEE & NEET preparation schedule is ready.</p>
         </div>
         
-        <button 
-          onClick={analyzeRisk}
-          disabled={loadingRisk}
-          className="primary-btn flex items-center gap-3 shadow-lg shadow-primary/20"
-        >
-          {loadingRisk ? <Loader2 className="w-5 h-5 animate-spin" /> : <BrainCircuit className="w-5 h-5" />}
-          Run AI Insight
-        </button>
+        <div className="flex bg-white/50 backdrop-blur-md rounded-full p-1 shadow-sm border border-border">
+          <button className="px-6 py-2 rounded-full text-sm font-bold bg-primary text-white">Daily View</button>
+          <button className="px-6 py-2 rounded-full text-sm font-bold text-text-muted hover:text-primary">Weekly</button>
+        </div>
       </div>
 
       {/* Bento Dashboard Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-6 md:grid-rows-4 gap-4 h-auto md:h-[900px]">
         
-        {/* Risk Analysis Status (Large Tile) */}
-        <div className="md:col-span-3 md:row-span-2 bento-tile p-8 flex flex-col justify-between">
-          <div className="flex justify-between items-start">
-            <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center border border-border">
-              <Zap className="w-6 h-6 text-amber-500" />
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted bg-surface px-2 py-1 rounded border border-border">AI System Active</span>
-          </div>
-          
-          <div>
-            <h3 className="text-2xl font-bold mb-4">Risk Status</h3>
-            {riskData ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
-                <div className={`p-6 rounded-sm border-l-4 ${riskData.risk_level === "High" ? "border-error bg-error/5" : "border-success bg-success/5"}`}>
-                  <div className="flex items-center gap-3 mb-2">
-                    {riskData.risk_level === "High" ? <AlertTriangle className="w-6 h-6 text-error" /> : <CheckCircle2 className="w-6 h-6 text-success" />}
-                    <p className={`text-xl font-bold ${riskData.risk_level === "High" ? "text-error" : "text-success"}`}>
-                      {riskData.status} ({Math.round(riskData.risk_probability * 100)}%)
-                    </p>
-                  </div>
-                  <p className="text-sm text-text-muted leading-relaxed">
-                    Personalized AI prediction suggests you are currently {riskData.risk_level === "High" ? "at risk of performance drops." : "maintaining an excellent learning pace."}
-                  </p>
-                </div>
-              </motion.div>
-            ) : (
-              <div className="py-12 text-center border-2 border-dashed border-border rounded-sm">
-                <BrainCircuit className="w-12 h-12 text-border mx-auto mb-4" />
-                <p className="text-sm text-text-muted font-medium">Click above to initialize AI tracking</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex justify-between items-center pt-6 border-t border-border">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
-              <Calendar className="w-4 h-4" /> Next Review: Tomorrow
-            </div>
-            <button className="text-primary text-xs font-bold hover:underline">View Details</button>
-          </div>
-        </div>
-
-        {/* Performance Chart (Large Horizontal Tile) */}
-        <div className="md:col-span-3 md:row-span-2 bento-tile p-8">
+        {/* Performance Chart (Full Width Tile) */}
+        <div className="md:col-span-6 md:row-span-2 bento-tile p-8">
           <div className="flex justify-between items-center mb-10">
-            <h3 className="text-xl font-bold">Engagement Velocity</h3>
-            <div className="text-[10px] font-bold text-text-muted uppercase border border-border px-2 py-1">Unit: % Score</div>
+            <div>
+              <h3 className="text-2xl font-bold">Academic Performance Trend</h3>
+              <p className="text-text-muted text-sm font-medium mt-1">Tracking your AITS Mock Test Percentile over time.</p>
+            </div>
+            <div className="text-[10px] font-bold text-text-muted uppercase border border-border px-3 py-1.5 rounded-full bg-surface">Unit: %ILE</div>
           </div>
           <div className="h-[280px]">
             <Line data={chartData} options={chartOptions} />
@@ -168,22 +115,115 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Stats Grid (4 Small Tiles) */}
-        <StatTile icon={<Clock className="text-blue-500" />} label="Hours Focus" value="42.5h" />
-        <StatTile icon={<TrendingUp className="text-emerald-500" />} label="Avg. Velocity" value="88%" />
-        <StatTile icon={<Users className="text-purple-500" />} label="Peer Rank" value="#12" />
-        <StatTile icon={<Award className="text-amber-500" />} label="Milestones" value="09" />
+        <StatTile icon={<BrainCircuit className="text-blue-500" />} label="Physics Score" value="68%" />
+        <StatTile icon={<TrendingUp className="text-emerald-500" />} label="Chemistry Score" value="82%" />
+        <StatTile icon={<Users className="text-purple-500" />} label="Avg Ranking" value="#4,120" />
+        <StatTile icon={<LayoutGrid className="text-amber-500" />} label="Tests Taken" value="142" />
+      </div>
 
-        {/* Bottom CTA Tile */}
-        <div className="md:col-span-2 md:row-span-1 bento-tile bg-primary p-6 group cursor-pointer overflow-hidden">
-          <div className="relative z-10">
-            <h4 className="text-white font-bold text-lg mb-2">Smart Course Library</h4>
-            <p className="text-white/70 text-xs">Explore 24 new chapters tailored for you.</p>
+      {/* NEW INTEGRATION: Syllabus Roadmap Pathway */}
+      <div className="max-w-7xl mx-auto mt-6 mb-12">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-extrabold tracking-tight">Your Curriculum <span className="italic text-primary">Roadmap</span></h2>
+          <div className="text-xs font-bold uppercase tracking-widest text-text-muted bg-surface px-4 py-2 border border-border rounded-full">
+            Target: Mid-Term Revision
           </div>
-          <ArrowUpRight className="absolute bottom-4 right-4 text-white w-6 h-6 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform" />
-          <div className="absolute -top-10 -left-10 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Physics Track */}
+          <div className="bento-tile p-6 hover:border-blue-500/50 transition-colors">
+            <div className="flex justify-between items-center mb-6">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                   <Atom className="w-5 h-5 text-blue-500" />
+                 </div>
+                 <h3 className="font-bold text-xl">Physics</h3>
+               </div>
+               <span className="text-xs font-bold text-text-muted bg-surface px-2 py-1 rounded">4/10 Complete</span>
+            </div>
+            
+            <div className="space-y-3">
+               <RoadmapItem status="done" title="Kinematics" />
+               <RoadmapItem status="done" title="Laws of Motion" />
+               <RoadmapItem status="done" title="Work, Energy & Power" />
+               <RoadmapItem status="done" title="Rotational Mechanics" />
+               <RoadmapItem status="current" title="Gravitation" />
+               <RoadmapItem status="locked" title="Thermodynamics" />
+               <div className="pt-2 text-center text-xs font-bold text-text-muted cursor-pointer hover:text-primary">
+                 + 4 more advanced topics
+               </div>
+            </div>
+          </div>
+
+          {/* Chemistry Track */}
+          <div className="bento-tile p-6 hover:border-emerald-500/50 transition-colors">
+            <div className="flex justify-between items-center mb-6">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-lg bg-emerald-500/10 flex items-center justify-center">
+                   <FlaskConical className="w-5 h-5 text-emerald-500" />
+                 </div>
+                 <h3 className="font-bold text-xl">Chemistry</h3>
+               </div>
+               <span className="text-xs font-bold text-text-muted bg-surface px-2 py-1 rounded">6/10 Complete</span>
+            </div>
+            
+            <div className="space-y-3">
+               <RoadmapItem status="done" title="Structure of Atom" />
+               <RoadmapItem status="done" title="Chemical Bonding" />
+               <RoadmapItem status="done" title="States of Matter" />
+               <RoadmapItem status="done" title="Thermodynamics" />
+               <RoadmapItem status="done" title="Equilibrium" />
+               <RoadmapItem status="done" title="Redox Reactions" />
+               <RoadmapItem status="current" title="Organic (GOC)" />
+               <div className="pt-2 text-center text-xs font-bold text-text-muted cursor-pointer hover:text-primary">
+                 + 3 more advanced topics
+               </div>
+            </div>
+          </div>
+
+          {/* Maths Track */}
+          <div className="bento-tile p-6 hover:border-purple-500/50 transition-colors">
+            <div className="flex justify-between items-center mb-6">
+               <div className="flex items-center gap-3">
+                 <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                   <Sigma className="w-5 h-5 text-purple-500" />
+                 </div>
+                 <h3 className="font-bold text-xl">Mathematics</h3>
+               </div>
+               <span className="text-xs font-bold text-text-muted bg-surface px-2 py-1 rounded">2/10 Complete</span>
+            </div>
+            
+            <div className="space-y-3">
+               <RoadmapItem status="done" title="Sets & Relations" />
+               <RoadmapItem status="done" title="Complex Numbers" />
+               <RoadmapItem status="current" title="Quadratic Equations" />
+               <RoadmapItem status="locked" title="Permutation & Combination" />
+               <RoadmapItem status="locked" title="Binomial Theorem" />
+               <RoadmapItem status="locked" title="Sequences & Series" />
+               <div className="pt-2 text-center text-xs font-bold text-text-muted cursor-pointer hover:text-primary">
+                 + 4 more advanced topics
+               </div>
+            </div>
+          </div>
         </div>
       </div>
     </main>
+  );
+}
+
+function RoadmapItem({ status, title }: { status: "done" | "current" | "locked", title: string }) {
+  return (
+    <div className={`p-3 rounded-md border flex items-center gap-3 transition-colors ${
+      status === 'done' ? 'bg-success/5 border-success/20 text-text-main opacity-70' :
+      status === 'current' ? 'bg-primary/5 border-primary text-primary font-bold shadow-md shadow-primary/10' :
+      'bg-surface border-border text-text-muted opacity-50'
+    }`}>
+      {status === 'done' ? <CheckSquare className="w-4 h-4 text-success" /> :
+       status === 'current' ? <BookOpen className="w-4 h-4" /> :
+       <div className="w-4 h-4 rounded border-2 border-border" />}
+      <span className="text-sm">{title}</span>
+    </div>
   );
 }
 

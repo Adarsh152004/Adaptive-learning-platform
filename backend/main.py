@@ -9,11 +9,17 @@ import requests.utils
 from groq import Groq
 from dotenv import load_dotenv
 from components.connection import connection
+from ai import recommendation_service
+from ai import quiz_service
 import datetime
 
 load_dotenv()
 
 app = FastAPI(title="LearnSphere AI API")
+
+# Register recommendation router
+app.include_router(recommendation_service.router)
+app.include_router(quiz_service.router)
 
 # DB connection (Supabase)
 db = connection()
@@ -77,6 +83,9 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str
     age: int
+    role: str = "student" # "teacher" or "student"
+    batch_code: Optional[str] = None # Required for students
+    batch_name: Optional[str] = None # Optional for teachers to name their batch
 
 class UserLogin(BaseModel):
     email: EmailStr
@@ -84,67 +93,152 @@ class UserLogin(BaseModel):
 
 @app.post("/auth/signup")
 async def signup(user: UserRegister):
-    """Temporary Auth Bypass: Signup always succeeds."""
-    return {"message": "User registered successfully (BYPASS)", "user": {"email": user.email}}
-    # try:
-    #     auth_res = db.auth.sign_up({
-    #         "email": user.email,
-    #         "password": user.password,
-    #         "options": {
-    #             "data": {
-    #                 "full_name": user.name,
-    #                 "age": user.age
-    #             }
-    #         }
-    #     })
-    #     
-    #     if not auth_res.user:
-    #         raise HTTPException(status_code=400, detail="Signup failed")
-    # 
-    #     db.table("profiles").update({
-    #         "name": user.name,
-    #         "age": user.age
-    #     }).eq("id", auth_res.user.id).execute()
-    # 
-    #     return {"message": "User registered successfully", "user": {"email": auth_res.user.email}}
-    # except Exception as e:
-    #     print(f"Signup error: {e}")
-    #     raise HTTPException(status_code=400, detail=str(e))
+    """Secure Signup with Role & Batch logic."""
+    print(f"--- Starting Signup for {user.email} ---")
+    try:
+        # 1. Sign up user in Supabase Auth
+        print("[1/3] Attempting Supabase Auth Sign-up...")
+        auth_res = db.auth.sign_up({
+            "email": user.email,
+            "password": user.password,
+            "options": {
+                "data": {
+                    "full_name": user.name
+                }
+            }
+        })
+        
+        if not auth_res.user:
+            print("[ERROR] Auth result returned no user.")
+            raise HTTPException(status_code=400, detail="Signup failed at Auth level")
+
+        user_id = auth_res.user.id
+        batch_id = None
+        print(f"[SUCCESS] Auth user created: {user_id}")
+
+        # 2. Handle Batch Logic
+        print("[2/3] Processing Batch Logic...")
+        if user.role == "teacher":
+            # Teachers create a new batch
+            batch_code = user.batch_code or f"BATCH-{datetime.datetime.now().strftime('%Y%H%M')}"
+            batch_res = db.table("batches").insert({
+                "teacher_id": user_id,
+                "batch_code": batch_code,
+                "batch_name": user.batch_name or f"{user.name}'s Batch"
+            }).execute()
+            
+            if not batch_res.data:
+                print("[ERROR] Batch creation failed.")
+                raise HTTPException(status_code=500, detail="Failed to create batch")
+                
+            batch_id = batch_res.data[0]['id']
+            print(f"[SUCCESS] Batch created with ID: {batch_id}")
+            
+        elif user.role == "student":
+            # Students must join an existing batch
+            if not user.batch_code:
+                raise HTTPException(status_code=400, detail="Batch code is required for students")
+            
+            print(f"Looking up batch code: {user.batch_code}")
+            batch_lookup = db.table("batches").select("id").eq("batch_code", user.batch_code).execute()
+            if not batch_lookup.data:
+                print("[ERROR] Invalid batch code provided.")
+                raise HTTPException(status_code=404, detail="Invalid batch code")
+            batch_id = batch_lookup.data[0]['id']
+            print(f"[SUCCESS] Joined batch ID: {batch_id}")
+
+        # 3. Create Profile
+        print("[3/3] Creating Profile record...")
+        db.table("profiles").insert({
+            "id": user_id,
+            "name": user.name,
+            "email": user.email,
+            "age": user.age,
+            "role": user.role,
+            "batch_id": batch_id
+        }).execute()
+        print("[SUCCESS] Profile record created.")
+
+        return {"message": "User registered successfully", "user": {"email": user.email, "role": user.role}}
+    except Exception as e:
+        err_msg = str(e)
+        print(f"Signup error: {err_msg}")
+        # Specific friendly messages
+        if "already registered" in err_msg.lower():
+            raise HTTPException(status_code=400, detail="Email already registered. Please login.")
+        if "password" in err_msg.lower() and "confirm" in err_msg.lower():
+            raise HTTPException(status_code=400, detail="Email confirmation required by Supabase.")
+        
+        raise HTTPException(status_code=400, detail=err_msg)
 
 @app.post("/auth/login")
 async def login(user: UserLogin):
-    """Temporary Auth Bypass: Any login succeeds."""
-    return {
-        "token": "dummy_bypass_token", 
-        "email": user.email,
-        "user": {
-            "name": "Adarsh (Guest)",
-            "email": user.email
+    """Secure Login with Role retrieval."""
+    print(f"--- Starting Login for {user.email} ---")
+    try:
+        auth_res = db.auth.sign_in_with_password({
+            "email": user.email,
+            "password": user.password
+        })
+        
+        if not auth_res.session:
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+
+        # Fetch profile data with role and batch info
+        profile_res = db.table("profiles").select("*, batches(batch_code, batch_name)").eq("id", auth_res.user.id).execute()
+        profile_data = profile_res.data[0] if profile_res.data else {}
+
+        print(f"[SUCCESS] Login successful for {user.email}")
+        return {
+            "token": auth_res.session.access_token, 
+            "user": {
+                "id": auth_res.user.id,
+                "name": profile_data.get("name", "User"),
+                "email": user.email,
+                "role": profile_data.get("role", "student"),
+                "batch_id": profile_data.get("batch_id"),
+                "batch_info": profile_data.get("batches")
+            }
         }
-    }
-    # try:
-    #     auth_res = db.auth.sign_in_with_password({
-    #         "email": user.email,
-    #         "password": user.password
-    #     })
-    #     
-    #     if not auth_res.session:
-    #         raise HTTPException(status_code=401, detail="Invalid email or password")
-    # 
-    #     profile_res = db.table("profiles").select("*").eq("id", auth_res.user.id).single().execute()
-    #     profile_data = profile_res.data if profile_res.data else {}
-    # 
-    #     return {
-    #         "token": auth_res.session.access_token, 
-    #         "email": user.email,
-    #         "user": {
-    #             "name": profile_data.get("name", "User"),
-    #             "email": user.email
-    #         }
-    #     }
-    # except Exception as e:
-    #     print(f"Login error: {e}")
-    #     raise HTTPException(status_code=401, detail="Authentication failed")
+    except Exception as e:
+        err_msg = str(e)
+        print(f"Login error: {err_msg}")
+        if "confirm your email" in err_msg.lower():
+             raise HTTPException(status_code=401, detail="EMAIL_NOT_CONFIRMED")
+        raise HTTPException(status_code=401, detail="Authentication failed")
+
+@app.get("/api/teacher/students")
+async def get_teacher_students(teacher_id: str):
+    """Fetch students and their performance for a specific teacher."""
+    try:
+        # 1. Get Teacher's batch
+        batch_res = db.table("batches").select("id").eq("teacher_id", teacher_id).single().execute()
+        if not batch_res.data:
+            return {"students": []}
+        
+        batch_id = batch_res.data['id']
+
+        # 2. Get Students and their latest quiz/wellbeing data
+        students_res = db.table("profiles").select("id, name, email").eq("batch_id", batch_id).execute()
+        students = students_res.data
+
+        detailed_students = []
+        for student in students:
+            # Latest Quiz Performance
+            quiz_res = db.table("quiz_performance").select("*").eq("user_id", student['id']).order("created_at", desc=True).limit(5).execute()
+            # Latest Wellbeing
+            wellbeing_res = db.table("wellbeing_logs").select("*").eq("user_id", student['id']).order("created_at", desc=True).limit(1).execute()
+            
+            detailed_students.append({
+                **student,
+                "quizzes": quiz_res.data,
+                "wellbeing": wellbeing_res.data[0] if wellbeing_res.data else None
+            })
+
+        return {"students": detailed_students}
+    except Exception as e:
+        print(f"Teacher view error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 class ChatRequest(BaseModel):
     query: str

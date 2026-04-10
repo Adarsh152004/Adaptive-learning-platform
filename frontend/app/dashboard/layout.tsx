@@ -9,9 +9,11 @@ import {
   User, 
   LogOut,
   BrainCircuit,
-  Sparkles
+  Sparkles,
+  Video,
+  Target
 } from "lucide-react";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { motion } from "framer-motion";
@@ -26,13 +28,23 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const userRole = (session?.user as any)?.role || "student";
 
-  const navItems = [
+  const studentNavItems = [
     { name: "Overview", href: "/dashboard", icon: LayoutDashboard },
     { name: "AI Tutor", href: "/dashboard/chat", icon: MessageSquare },
-    { name: "Courses", href: "/dashboard/courses", icon: GraduationCap },
-    { name: "Predict", href: "/dashboard/risk", icon: BrainCircuit },
+    { name: "Quizzes", href: "/dashboard/quizzes", icon: Target },
+    { name: "Library", href: "/dashboard/video-library", icon: Video },
   ];
+
+  const teacherNavItems = [
+    { name: "Tracking", href: "/dashboard/teacher", icon: LayoutDashboard },
+    { name: "AI Tutor", href: "/dashboard/chat", icon: MessageSquare },
+    { name: "Library", href: "/dashboard/video-library", icon: Video },
+  ];
+
+  const navItems = userRole === "teacher" ? teacherNavItems : studentNavItems;
 
   return (
     <div className="min-h-screen bg-surface selection:bg-primary/10">

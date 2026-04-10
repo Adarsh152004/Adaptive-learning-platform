@@ -25,7 +25,11 @@ export default function LoginPage() {
     });
 
     if (result?.error) {
-      setError("Invalid email or password");
+      if (result.error.includes("EMAIL_NOT_CONFIRMED")) {
+        setError("Email not confirmed. Please check your inbox or disable email verification in Supabase.");
+      } else {
+        setError("Invalid email or password");
+      }
       setLoading(false);
     } else {
       router.push("/dashboard");
