@@ -7,26 +7,16 @@ import google.generativeai as genai
 import requests
 from dotenv import load_dotenv
 from components.connection import connection
-from ml_models.failure_predictor import StudentFailurePredictor
-from ai.vector_search import vector_store
-import bcrypt
-import jwt
 import datetime
 
 load_dotenv()
 
 app = FastAPI(title="LearnSphere AI API")
 
-# Setup Auth
-# pwd_context removed in favor of direct bcrypt
-JWT_SECRET = os.getenv("JWT_SECRET", "supersecret")
-
-# DB connection
+# DB connection (Supabase)
 db = connection()
-users_col = db["users"]
 
-# Initialize AI/ML
-predictor = StudentFailurePredictor()
+# Initialize Gemini
 gemini_api_key = os.getenv("GEMMA_API_KEY")
 genai.configure(api_key=gemini_api_key)
 
@@ -56,64 +46,60 @@ class UserLogin(BaseModel):
 @app.post("/auth/signup")
 async def signup(user: UserRegister):
     try:
-        if users_col.find_one({"email": user.email}):
-            raise HTTPException(status_code=400, detail="User already exists")
-        
-        # Direct bcrypt hashing
-        hashed_password = bcrypt.hashpw(user.password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        new_user = {
-            "name": user.name,
+        # 1. Sign up user in Supabase Auth
+        auth_res = db.auth.sign_up({
             "email": user.email,
-            "password": hashed_password,
-            "age": user.age,
-            "created_at": datetime.datetime.utcnow()
-        }
-        users_col.insert_one(new_user)
-        return {"message": "User registered successfully"}
-    except HTTPException:
-        raise
+            "password": user.password,
+            "options": {
+                "data": {
+                    "full_name": user.name,
+                    "age": user.age
+                }
+            }
+        })
+        
+        if not auth_res.user:
+            raise HTTPException(status_code=400, detail="Signup failed")
+
+        # 2. Update profile in public.profiles (Trigger handles insertion, we update name/age if needed)
+        # However, metadata in sign_up is usually enough. Assuming trigger works.
+        db.table("profiles").update({
+            "name": user.name,
+            "age": user.age
+        }).eq("id", auth_res.user.id).execute()
+
+        return {"message": "User registered successfully", "user": {"email": auth_res.user.email}}
     except Exception as e:
         print(f"Signup error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/auth/login")
 async def login(user: UserLogin):
     try:
-        existing_user = users_col.find_one({"email": user.email})
+        # Sign in with Supabase Auth
+        auth_res = db.auth.sign_in_with_password({
+            "email": user.email,
+            "password": user.password
+        })
         
-        if not existing_user:
+        if not auth_res.session:
             raise HTTPException(status_code=401, detail="Invalid email or password")
 
-        if "password" not in existing_user:
-             raise HTTPException(status_code=500, detail="User record is malformed (missing password)")
+        # Get user details from profiles
+        profile_res = db.table("profiles").select("*").eq("id", auth_res.user.id).single().execute()
+        profile_data = profile_res.data if profile_res.data else {}
 
-        try:
-            # Direct bcrypt verification
-            if not bcrypt.checkpw(user.password.encode('utf-8'), existing_user["password"].encode('utf-8')):
-                raise HTTPException(status_code=401, detail="Invalid email or password")
-        except ValueError as e:
-            # Handle bcrypt 72 character limit or other hashing issues
-            print(f"Password verification error: {e}")
-            raise HTTPException(status_code=401, detail="Invalid password format or verification failure")
-
-        token = jwt.encode({
-            "email": user.email,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-        }, JWT_SECRET, algorithm="HS256")
-        
         return {
-            "token": token, 
+            "token": auth_res.session.access_token, 
             "email": user.email,
             "user": {
-                "name": existing_user.get("name", "User"),
-                "email": existing_user["email"]
+                "name": profile_data.get("name", "User"),
+                "email": user.email
             }
         }
-    except HTTPException:
-        raise
     except Exception as e:
-        print(f"Login unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        print(f"Login error: {e}")
+        raise HTTPException(status_code=401, detail="Authentication failed")
 
 class ChatRequest(BaseModel):
     query: str
@@ -130,32 +116,54 @@ class RecommendationRequest(BaseModel):
 
 @app.post("/api/chat")
 async def api_chat(req: ChatRequest):
-    """AI Chat endpoint using Gemini with RAG support."""
-    # RAG: Search for relevant context
-    context = vector_store.search(req.query, k=2)
-    enriched_query = f"Context: {context}\n\nQuestion: {req.query}" if context else req.query
-    
-    chat_session = model.start_chat()
-    response = chat_session.send_message(enriched_query)
-    
-    return {
-        "response": response.text,
-        "context_used": context
-    }
+    """AI Chat endpoint using Gemini (Stable)."""
+    try:
+        # Simple context discovery via Gemini instead of local FAISS if index is broken
+        prompt = f"Help the student with this query: {req.query}"
+        chat_session = model.start_chat()
+        response = chat_session.send_message(prompt)
+        
+        return {
+            "response": response.text,
+            "context_used": "Gemini Knowledge Base"
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/predict-risk")
 async def predict_risk(req: PredictRequest):
-    """Predicts a student's failure risk."""
+    """Predicts a student's failure risk using Gemini (Stable)."""
     if len(req.metrics) != 4:
         raise HTTPException(status_code=400, detail="Invalid metrics. Need 4 values.")
-        
-    res, prob = predictor.predict(req.metrics)
     
-    return {
-        "risk_level": "High" if res else "Low",
-        "risk_probability": round(prob, 2),
-        "status": "Fail Risk" if res else "On Track"
-    }
+    study, attendance, prev, engage = req.metrics
+    prompt = (
+        f"Act as a student performance predictor. Based on these metrics:\n"
+        f"- Study Hours: {study}\n"
+        f"- Attendance Rate: {attendance}%\n"
+        f"- Previous Score: {prev}/100\n"
+        f"- Engagement Score: {engage}/100\n"
+        f"Predict if the student is at risk of failing (High/Low). "
+        f"Return ONLY a JSON object: {{\"risk\": \"High\" | \"Low\", \"probability\": <number 0-1>, \"status\": \"Fail Risk\" | \"On Track\"}}"
+    )
+    
+    try:
+        response = model.generate_content(prompt)
+        # Parse JSON from response
+        import json
+        clean_text = response.text.strip().replace("```json", "").replace("```", "")
+        data = json.loads(clean_text)
+        
+        return {
+            "risk_level": data.get("risk", "Low"),
+            "risk_probability": data.get("probability", 0.5),
+            "status": data.get("status", "On Track")
+        }
+    except Exception as e:
+        print(f"Prediction error: {e}")
+        # Fallback logic
+        risk = "High" if (study < 3 or attendance < 0.6 or prev < 50) else "Low"
+        return {"risk_level": risk, "risk_probability": 0.8 if risk == "High" else 0.2, "status": "Fail Risk" if risk == "High" else "On Track"}
 
 @app.post("/api/wellbeing-risk")
 async def wellbeing_risk(req: FeedbackRequest):
@@ -191,9 +199,15 @@ class CourseRequest(BaseModel):
 @app.post("/api/generate-course")
 async def generate_course(req: CourseRequest):
     chapters = []
-    for i in range(req.no_of_chapters):
-        url, title = fetch_youtube_video(f"{req.topic} Chapter {i + 1}")
-        chapters.append({"title": f"{req.topic} Chapter {i + 1}", "video_url": url, "video_title": title})
+    # Use Gemini to generate chapter titles first for better YouTube search
+    prompt = f"Suggest {req.no_of_chapters} specific educational chapter titles for the topic: {req.topic}. Return only the titles as a bulleted list."
+    titles_res = model.generate_content(prompt).text.split('\n')
+    titles = [t.strip('- ').strip() for t in titles_res if t.strip()]
+    
+    for i in range(min(req.no_of_chapters, len(titles))):
+        search_title = titles[i]
+        url, title = fetch_youtube_video(search_title)
+        chapters.append({"title": search_title, "video_url": url, "video_title": title})
     return {"chapters": chapters}
 
 if __name__ == "__main__":

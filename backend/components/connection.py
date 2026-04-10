@@ -1,22 +1,21 @@
-import pymongo
+from supabase import create_client, Client
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 def connection():
-    mongo_uri = os.getenv("MONGO_URI")
-    if not mongo_uri:
-        print("[ERROR] MONGO_URI not found in environment variables!")
+    url = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    
+    if not url or not key:
+        print("[ERROR] SUPABASE_URL or SUPABASE_KEY not found in environment variables!")
         return None
         
     try:
-        # Use the fully qualified name from the import
-        client = pymongo.MongoClient(mongo_uri)
-        # Verify connection
-        client.admin.command('ping')
-        print("[SUCCESS] MongoDB Connected Successfully")
-        return client['PLP']
+        supabase: Client = create_client(url, key)
+        print("[SUCCESS] Supabase Client Initialized Successfully")
+        return supabase
     except Exception as e:
-        print(f"[ERROR] MongoDB Connection Error: {e}")
+        print(f"[ERROR] Supabase Connection Error: {e}")
         return None
