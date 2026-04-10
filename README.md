@@ -1,88 +1,85 @@
 # LearnSphere AI | Personalized Learning Platform
 
-![LearnSphere AI](https://github.com/user-attachments/assets/076fe6bb-b53e-4eb9-9f74-d2b4a0cb8791)
+![LearnSphere AI Hub](https://github.com/user-attachments/assets/076fe6bb-b53e-4eb9-9f74-d2b4a0cb8791)
 
-## Overview
+## 🌟 Overview
 
-**LearnSphere AI** is an advanced, production-ready educational platform that provides learners with customized educational paths tailored to their unique skills, progress, and learning goals. By leveraging the latest AI models, the platform generates personalized learning plans, course recommendations, and continuous wellbeing monitoring.
+**LearnSphere AI** is a cutting-edge, production-ready educational ecosystem designed to provide hyper-personalized learning experiences. By merging advanced AI generation (Gemini + Groq) with a high-performance Bento Hub UI, the platform creates customized courses, provides real-time AI tutoring, and monitors student wellbeing to prevent burnout.
+
+### 🎥 Project Demo
+> [!TIP]
+> **View the full system walkthrough here:**
+> [Final UX Verification & Walkthrough](https://github.com/Krishagram/LearnSphere/blob/main/docs/demo_walkthrough.md) (Placeholder for your recording)
+
+---
 
 ## 🚀 Key Features
 
-1.  **AI Tutor (Chat)**: A context-aware learning assistant powered by Gemini 2.0 Flash with RAG-enhanced query resolution.
-2.  **Course Architect**: Instantly generate structured learning paths with curated video content from high-quality sources.
-3.  **Wellbeing & Risk Analysis**: AI sentiment analysis to monitor student burnout and provide personalized academic support.
-4.  **Student Performance Predictor**: ML-based risk assessment to identify potential failure early based on engagement and performance metrics.
-5.  **Premium Dashboard**: A stunning, modern interface built with Next.js 16 and Tailwind CSS v4 featuring glassmorphism and smooth animations.
+1.  **AI Course Architect**: Instantly generate structured learning paths with AI-curated YouTube content and unique AI-generated thumbnails for every phase.
+2.  **Zero-Latency AI Tutor**: A dual-model failover system (Gemini 2.0 + Groq Llama-3) ensures your personal tutor is always online and incredibly fast.
+3.  **Wellbeing Radar**: AI sentiment analysis that analyzes student feedback to identify burnout risks and provide dedicated academic support.
+4.  **Bento Hub UI**: A stunning, premium dashboard built with glassmorphism and smooth animations for a distraction-free learning experience.
+5.  **Smart RAG (Pinecone)**: Preparation for high-scale context-aware learning using cloud-native vector search.
+
+---
 
 ## 🛠️ Tech Stack
 
--   **Frontend**: Next.js 16.2.3 (App Router), TypeScript, Tailwind CSS v4, Lucide Icons, Framer Motion.
--   **Backend**: FastAPI, Python 3.11+, Pydantic.
--   **AI/ML**: Gemini 2.0 Flash (Google AI Studio), Scikit-Learn (Failure Prediction).
--   **Database**: MongoDB Atlas (Cloud NoSQL).
--   **Authentication**: NextAuth.js with JWT integration.
+-   **Frontend**: Next.js 16.2.3 (App Router), TypeScript, Tailwind CSS v4, Framer Motion.
+-   **Backend**: FastAPI (Python 3.11), Uvicorn.
+-   **AI Hub**: Google Gemini 2.0 Flash, Groq (Llama-3), Pollinations.ai (Generative Images).
+-   **Database/Auth**: Supabase (PostgreSQL + Auth).
+-   **Vector Search**: Pinecone (Infrastructure Ready).
 
-## 📦 Setup & Installation
+---
 
-### Prerequisites
--   Node.js 18+
+## 📦 Startup & Installation
+
+### 1. Prerequisites
+-   Node.js 20+
 -   Python 3.11+
--   MongoDB Atlas Cluster
--   Google AI Studio API Key
+-   Supabase Account (URL & Anon Key)
+-   Google AI Studio API Key (Gemini)
+-   (Optional) Groq API Key for faster chat fallback.
 
-### Backend Setup
-1.  Navigate to the backend directory:
-    ```bash
-    cd backend
-    ```
-2.  Create and activate a virtual environment:
-    ```bash
-    python -m venv venv
-    # Windows:
-    .\venv\Scripts\activate
-    # Mac/Linux:
-    source venv/bin/activate
-    ```
-3.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-4.  Configure `.env` file:
-    ```env
-    MONGO_URI=your_mongodb_atlas_uri
-    GEMMA_API_KEY=your_google_ai_studio_api_key
-    JWT_SECRET=your_jwt_secret
-    YOUTUBE_API_KEY=your_youtube_v3_api_key
-    PORT=8001
-    ```
-5.  Run the backend:
-    ```bash
-    python main.py
-    ```
+### 2. Backend Setup
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+```
+**Configure `.env`**:
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_anon_key
+GEMMA_API_KEY=your_google_ai_key
+GROQ_API_KEY=your_groq_key_here
+YOUTUBE_API_KEY=your_youtube_v3_key
+PORT=8001
+```
+**Run**: `python main.py`
 
-### Frontend Setup
-1.  Navigate to the frontend directory:
-    ```bash
-    cd frontend
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Configure `.env.local`:
-    ```env
-    NEXTAUTH_SECRET=your_nextauth_secret
-    NEXTAUTH_URL=http://localhost:3000
-    NEXT_PUBLIC_API_URL=http://localhost:8001
-    ```
-4.  Run the frontend:
-    ```bash
-    npm run dev
-    ```
+### 3. Frontend Setup
+```bash
+cd frontend
+npm install
+```
+**Configure `.env.local`**:
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_API_URL=http://localhost:8001
+```
+**Run**: `npm run dev`
+
+---
 
 ## 🎯 Usage
--   Access the frontend at `http://localhost:3000`.
--   API Documentation (Swagger) is available at `http://localhost:8001/docs`.
+-   **Dashboard**: `http://localhost:3000/dashboard`
+-   **AI Tutor**: Access real-time support in the Chat tab.
+-   **Course Hub**: Enter any topic to generate a full curriculum with visual aids.
+-   **Wellbeing**: Get an AI report on your mental and academic health.
 
 ## 📄 License
 This project is licensed under the MIT License.

@@ -85,19 +85,31 @@ export default function CoursesPage() {
               className="bento-tile flex flex-col group overflow-hidden bg-white"
             >
               <div className="aspect-video relative bg-surface border-b border-border overflow-hidden">
-                {chapter.video_url ? (
-                  <iframe
-                    src={chapter.video_url}
-                    className="w-full h-full opacity-90 group-hover:opacity-100 transition-opacity"
-                    allowFullScreen
+                {chapter.image_url ? (
+                  <img 
+                    src={chapter.image_url} 
+                    alt={chapter.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                   />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full bg-surface">
                     <Video className="w-10 h-10 text-border" />
-                    <span className="text-[10px] font-bold text-text-muted uppercase mt-2">Preview Offline</span>
                   </div>
                 )}
-                <div className="absolute top-4 left-4 px-3 py-1 bg-primary text-white text-[10px] font-extrabold uppercase rounded shadow-lg">
+                
+                {/* Play Overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                   <a 
+                    href={chapter.video_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="w-16 h-16 bg-primary rounded-full flex items-center justify-center shadow-2xl transform scale-75 group-hover:scale-100 transition-transform"
+                   >
+                     <Play className="w-8 h-8 text-white fill-current" />
+                   </a>
+                </div>
+
+                <div className="absolute top-4 left-4 px-3 py-1 bg-white/90 backdrop-blur text-primary text-[10px] font-extrabold uppercase rounded shadow-sm border border-primary/20">
                   Phase {idx + 1}
                 </div>
               </div>
