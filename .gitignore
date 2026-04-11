@@ -13,6 +13,8 @@ venv/
 .env/
 .venv/
 env/
+.env
+backend/.env
 
 # Logs
 *.log

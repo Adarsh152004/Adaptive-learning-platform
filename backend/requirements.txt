@@ -14,3 +14,5 @@ openai-whisper
 yt-dlp
 imageio-ffmpeg
 setuptools
+tavily-python
+google-api-python-client

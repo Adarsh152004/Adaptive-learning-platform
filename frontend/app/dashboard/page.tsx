@@ -10,7 +10,7 @@ import {
   Award, 
   BrainCircuit,
   AlertTriangle,
-  CheckCircle2 as CheckCircleIcon,
+  CheckCircle2,
   CheckSquare,
   BookOpen,
   Atom,
@@ -34,6 +34,7 @@ import {
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 import axios from "axios";
+// import CognitiveGames from "@/components/mindguard/CognitiveGames"; // Removed from Overview
 
 ChartJS.register(
   CategoryScale,
@@ -49,6 +50,11 @@ ChartJS.register(
 export default function DashboardPage() {
   const { data: session } = useSession();
   const [activeRoadmap, setActiveRoadmap] = useState("all");
+  const [riskData, setRiskData] = useState<any>({
+    status: "Good Standing",
+    risk_level: "Low",
+    risk_probability: 0.12
+  });
 
   const chartData = {
     labels: ["Mock 1", "Mock 2", "Mock 3", "Mock 4", "Mock 5", "AITS 1"],
@@ -100,8 +106,49 @@ export default function DashboardPage() {
       {/* Bento Dashboard Grid */}
       <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-6 md:grid-rows-4 gap-4 h-auto md:h-[900px]">
         
-        {/* Performance Chart (Full Width Tile) */}
-        <div className="md:col-span-6 md:row-span-2 bento-tile p-8">
+        {/* Risk Analysis Status (Large Tile) */}
+        <div className="md:col-span-3 md:row-span-2 bento-tile p-8 flex flex-col justify-between">
+          <div className="flex justify-between items-start">
+            <div className="w-12 h-12 bg-surface rounded-full flex items-center justify-center border border-border">
+              <Zap className="w-6 h-6 text-amber-500" />
+            </div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted bg-surface px-2 py-1 rounded border border-border">AI System Active</span>
+          </div>
+          
+          <div>
+            <h3 className="text-2xl font-bold mb-4">Risk Status</h3>
+            {riskData ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className={`p-6 rounded-sm border-l-4 ${riskData.risk_level === "High" ? "border-error bg-error/5" : "border-success bg-success/5"}`}>
+                  <div className="flex items-center gap-3 mb-2">
+                    {riskData.risk_level === "High" ? <AlertTriangle className="w-6 h-6 text-error" /> : <CheckCircle2 className="w-6 h-6 text-success" />}
+                    <p className={`text-xl font-bold ${riskData.risk_level === "High" ? "text-error" : "text-success"}`}>
+                      {riskData.status} ({Math.round(riskData.risk_probability * 100)}%)
+                    </p>
+                  </div>
+                  <p className="text-sm text-text-muted leading-relaxed">
+                    Personalized AI prediction suggests you are currently {riskData.risk_level === "High" ? "at risk of performance drops." : "maintaining an excellent learning pace."}
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
+              <div className="py-12 text-center border-2 border-dashed border-border rounded-sm">
+                <BrainCircuit className="w-12 h-12 text-border mx-auto mb-4" />
+                <p className="text-sm text-text-muted font-medium">Click above to initialize AI tracking</p>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center pt-6 border-t border-border">
+            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-tighter">
+              <Calendar className="w-4 h-4" /> Next Review: Tomorrow
+            </div>
+            <button className="text-primary text-xs font-bold hover:underline">View Details</button>
+          </div>
+        </div>
+
+        {/* Performance Chart (Restored to Large Horizontal Tile) */}
+        <div className="md:col-span-3 md:row-span-2 bento-tile p-8">
           <div className="flex justify-between items-center mb-10">
             <div>
               <h3 className="text-2xl font-bold">Academic Performance Trend</h3>
